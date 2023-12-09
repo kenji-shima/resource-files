@@ -156,8 +156,8 @@ polyline.toGeoJSON = function(str, precision) {
     };
 };
 
-if (typeof module === 'object' && module.exports) {
+/*if (typeof module === 'object' && module.exports) {
     module.exports = polyline;
 }
 
-export {polyline}
+export {polyline}*/
