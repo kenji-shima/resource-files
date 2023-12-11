@@ -253,7 +253,7 @@ class LegacyLayers {
     }
 
     addAllLayers() {
-        fetchJson("./data/legacy-street-style.json").then(style => {
+        fetchJson("https://kenji-shima.github.io/resource-files/legacy-street-style.json").then(style => {
             style.layers.forEach(layer => {
                 if (layer.id.includes('-label')) {
                     this.map.addLayer(layer)
