@@ -115,9 +115,13 @@ function dispLoading(msg) {
     }
 }
 
+window.dispLoading = dispLoading
+
 function removeLoading() {
     $("#nowLoading").remove();
 }
+
+window.removeLoading = removeLoading
 
 function setEta(json, etaObj) {
     if (!etaObj) {
@@ -269,6 +273,8 @@ const createRandomPointsIn = (featureCollection, count) => {
     return fc
 
 }
+
+window.createRandomPointsIn = createRandomPointsIn
 
 const getPolygonArray = (feature) => {
     let polyList = [];
