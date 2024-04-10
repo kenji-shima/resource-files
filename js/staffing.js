@@ -201,6 +201,12 @@ map.on('click', 'jobs', async (e) => {
     }
 })
 
+const toggleAllJobs = () => {
+    const toggles = document.getElementsByClassName("toggle_input")
+    for(let t of toggles){
+        t.click()
+    }
+}
 const removePois = () => {
     if (map.getLayer(pois)) {
         map.removeLayer(pois)
@@ -338,6 +344,7 @@ const plotJobs = () => {
                 'text-size': 12
             }
         });*/
+        toggleAllJobs()
 }
 
 const createJobFilter = () => {
