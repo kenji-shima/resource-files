@@ -637,6 +637,12 @@ const categorySearch = async (elem) => {
 
 
 const poi_categories = {
+    parking: {
+        label: "駐車場",
+        category: "トラベル>駐車場",
+        maki: "parking_image",
+        called: false
+    },
     cafe: {
         label: "カフェ",
         category: "レストラン>カフェ",
