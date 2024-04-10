@@ -894,6 +894,11 @@ main #modal .inner .toggle_button_list li p {
     width: 400px !important;
 }
 
+.toggle_button_list li p[data-life=駐車場] {
+    background: var(--parking-image) no-repeat 0 15%;
+    background-size: 25px;
+}
+
 .toggle_button_list li p[data-life=カフェ] {
     background: var(--cafe-image) no-repeat 0 15%;
     background-size: 25px;
