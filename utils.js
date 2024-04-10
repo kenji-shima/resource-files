@@ -2,9 +2,15 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoia2Vuamktc2hpbWEiLCJhIjoiY2xhZ2NmZ3BiMGFqbzNub
 const search_uri = 'https://api.mapbox.com/search/v1/'
 const common_params = `language=ja&country=jp&access_token=${mapboxgl.accessToken}`
 //const geocoding_uri = 'https://api.mapbox.com/geocoding/v5/mapbox.places/';
+
+
 const geocoding_uri = 'https://api.mapbox.com/search/geocode/v6/';
 //const directions_uri = 'https://api.mapbox.com/directions/v5/mapbox/'
 const directions_uri = 'https://api.mapbox.com/directions/v5/mapbox.tmp.valhalla-zenrin/'
+const searchbox_uri = 'https://api.mapbox.com/search/searchbox/v1/'
+const isochrone_uri = 'https://api.mapbox.com/isochrone/v1/'
+
+const rurubu_uri = 'https://www.j-jti.com/appif/sight?appid=n2xNzqos7NirxGBJ&pagecount=100&responsetype=json'
 
 function getFirstDayOfMonth() {
     const now = new Date();
@@ -45,6 +51,15 @@ async function fetchJson(file) {
     return await query.json();
 }
 
+async function fetchRurubu(coordinates) {
+    const url = 'https://www.j-jti.com/appif/sight?appid=n2xNzqos7NirxGBJ&lgenre=1&jis=13103&pagecount=100&responsetype=json'
+    //url = `${rurubu_uri}&latitude=${coordinates[0]}&longitude=${coordinates[1]}`
+
+    const query = await fetch(url, { method: 'GET' })
+    console.log(query.json())
+    return await query.json()
+}
+
 async function getFirstAddress(coordinates) {
     let json = await fetchReverseSearchAddress(coordinates)
     if (json.features.length > 0) {
@@ -52,6 +67,33 @@ async function getFirstAddress(coordinates) {
     } else {
         return "no matches"
     }
+}
+
+async function fetchCategorySearch(categoryid, coordinates) {
+    const query = await fetch(`${searchbox_uri}category/${categoryid}?${common_params}&proximity=${coordinates[0]},${coordinates[1]}&limit=25`, { method: 'GET' })
+    return await query.json()
+}
+
+async function categorySearchWithBbox(categoryid, coordinates, radiusInKm) {
+    const bbox = calculateBboxWithRadius(coordinates, radiusInKm).join(',')
+    const query = await fetch(`${searchbox_uri}category/${categoryid}?${common_params}&proximity=${coordinates[0]},${coordinates[1]}&limit=25&bbox=${bbox}`, { method: 'GET' })
+    return await query.json()
+}
+
+function calculateBboxWithRadius(centerCoordinates, radiusInKm) {
+    const centerPoint = turf.point(centerCoordinates);
+    const buffered = turf.buffer(centerPoint, radiusInKm, { units: 'kilometers' });
+    const bbox = turf.bbox(buffered);
+    return bbox;
+}
+
+async function fetchIsochrone(profile, coordinates, minutes, colors) {
+    let contourColors = ''
+    if (colors) {
+        contourColors = `contours_colors=${colors}`
+    }
+    const query = await fetch(`${isochrone_uri}${profile}/${coordinates[0]},${coordinates[1]}?contours_minutes=${minutes}&polygons=true&${contourColors}&access_token=${mapboxgl.accessToken}`)
+    return await query.json()
 }
 
 async function fetchReverseSearchAddress(coordinates) {
@@ -89,7 +131,9 @@ let lat = 35.45305;
 
 var textFile = null,
     makeTextFile = function (text) {
-        var data = new Blob([text], { type: 'text/plain' });
+        var encoder = new TextEncoder();
+        var text = encoder.encode(text);
+        var data = new Blob([text], { type: 'text/plain;charset=utf-8' });
 
         // If we are replacing a previously generated file we need to
         // manually revoke the object URL to avoid memory leaks.
@@ -121,15 +165,17 @@ function removeLoading() {
     $("#nowLoading").remove();
 }
 
-window.removeLoading = removeLoading
-
 function setEta(json, etaObj) {
     if (!etaObj) {
         return
     }
     let duration = 0.0
     for (let leg of json.routes[0].legs) {
-        duration += leg.duration_typical
+        if (leg.duration_typical) {
+            duration += leg.duration_typical
+        } else {
+            duration += leg.duration
+        }
     }
     const departureTime = new Date();
     const eta = new Date(departureTime.getTime() + duration * 1000);
@@ -137,15 +183,31 @@ function setEta(json, etaObj) {
     const minutes = eta.getMinutes().toString().padStart(2, '0')
 
     etaObj.eta = `${hours}:${minutes}`
+    etaObj.duration = duration
+
+    let duration_mins = Math.floor(duration / 60)
+    const seconds = duration_mins % 60
+    if (seconds > 30) duration_mins += 1
+    etaObj.duration_mins = duration_mins
+
+    let distance = json.routes[0].distance
+    distance = (distance / 1000).toFixed(1)
+    etaObj.distance_km = distance
+
 }
 
+window.removeLoading = removeLoading
+
 let routes = {}
-async function setRoute(map, start, end, color, etaObj) {
+async function setRoute(map, start, end, color, etaObj, profile) {
+    if (!profile) {
+        profile = 'driving-traffic'
+    }
     let id = `${start[0]}_${start[1]}_${end[0]}_${end[1]}`
     let history = routes[id]
     let route
     if (!history) {
-        const query = await fetch(`${directions_uri}driving-traffic/${start[0]},${start[1]};${end[0]},${end[1]}?overview=full&steps=true&geometries=polyline&access_token=${mapboxgl.accessToken}`, { method: 'GET' })
+        const query = await fetch(`${directions_uri}${profile}/${start[0]},${start[1]};${end[0]},${end[1]}?overview=full&steps=true&geometries=polyline&access_token=${mapboxgl.accessToken}`, { method: 'GET' })
         const json = await query.json()
         setEta(json, etaObj)
         route = polyline.toGeoJSON(json.routes[0].geometry)
@@ -194,6 +256,21 @@ function removeAllRoutes(map) {
             map.removeSource(id)
         }
     }
+}
+
+const getAllRoutes = (map) => {
+    const featureCollection = {
+        type: "FeatureCollection",
+        features: []
+    }
+    for (let id in routes) {
+        const source = map.getSource(id)
+        if (source) {
+            const f = source._data
+            featureCollection.features.push(f)
+        }
+    }
+    return featureCollection
 }
 
 const computeCameraPosition = (
