@@ -17,6 +17,42 @@ function getFirstDayOfMonth() {
     return now.getFullYear() + '-' + (now.getMonth() + 1) + '-01';
 }
 
+const formatTime = (timestamp) => {
+    const date = new Date(timestamp * 1000);
+
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+
+    const formattedDate = `${hours}:${minutes}`;
+    return formattedDate
+}
+
+const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+}
+
+const getOneMonthBeforeAndDatesArray = (dateString) => {
+    const specifiedDate = new Date(dateString);
+
+    const dateBefore = new Date(specifiedDate);
+    dateBefore.setMonth(dateBefore.getMonth() - 1);
+
+    const datesArray = [];
+    let currentDate = new Date(dateBefore);
+    while (currentDate <= specifiedDate) {
+        datesArray.push(formatDate(currentDate));
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return {
+        before: formatDate(dateBefore),
+        datesArray: datesArray
+    };
+}
+
 function uuidv4() {
     return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
         (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
