@@ -1,4 +1,4 @@
-mapboxgl.accessToken = 'pk.eyJ1Ijoia2Vuamktc2hpbWEiLCJhIjoiY2xhZ2NmZ3BiMGFqbzNubThpbWMxOXU3MCJ9.JlXUW8MwwX1LhhMnbWyUQw';
+mapboxgl.accessToken = 'pk.eyJ1Ijoia2Vuamktc2hpbWEiLCJhIjoiY2xpd2RwaHhzMGJoYjNlbnduYjJmMm5xNyJ9.Zi2lDBa9rXEAj6KyhLrINA';
 const search_uri = 'https://api.mapbox.com/search/v1/'
 const common_params = `language=ja&country=jp&access_token=${mapboxgl.accessToken}`
 //const geocoding_uri = 'https://api.mapbox.com/geocoding/v5/mapbox.places/';
